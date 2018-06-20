@@ -35,7 +35,8 @@ public abstract class CircleIntersector {
 	 *            first circle
 	 * @param b
 	 *            second circle
-	 * @return two vectors with x and y positions for each point. IMPORTANT: The order of vectors depends of the order of circles. If no intersection
+	 * @return two vectors with x and y positions for each point. IMPORTANT: The
+	 *         order of vectors depends of the order of circles. If no intersection
 	 *         returns null
 	 */
 	public static PVector[] twoIntersectionPoints(VertexCircle a, VertexCircle b) {
@@ -99,7 +100,7 @@ public abstract class CircleIntersector {
 	}
 
 	/**
-	 * Returns the star and end angle in radians described by the intersecting
+	 * Returns the start and end angle in radians described by the intersecting
 	 * points and the center of the first circle
 	 * 
 	 * @param a
@@ -108,22 +109,22 @@ public abstract class CircleIntersector {
 	 *            second circle
 	 * @return angle in radians
 	 */
-	public static float[] StartEndAngleIntersection(VertexCircle a, PVector startPoint, PVector endPoint ) {
+	public static float[] startEndAngleIntersection(VertexCircle a, PVector startPoint, PVector endPoint) {
 		float[] rtn = new float[2]; // 0 start, 1 end
-		
+
 		try {
-			// Start 
-			rtn[0] = PApplet.atan2(endPoint.y -a.orig.y, endPoint.x - a.orig.x);
+			// Start
+			rtn[0] = PApplet.atan2(endPoint.y - a.orig.y, endPoint.x - a.orig.x);
 
 			// End angleBetweenCenters(a, b) -
-			rtn[1] = PApplet.atan2(startPoint.y -a.orig.y, startPoint.x - a.orig.x);
+			rtn[1] = PApplet.atan2(startPoint.y - a.orig.y, startPoint.x - a.orig.x);
 
 			if (rtn[0] <= 0)
 				rtn[0] += PApplet.TWO_PI;
-			
+
 			if (rtn[1] <= 0)
 				rtn[1] += PApplet.TWO_PI;
-			//System.out.println(a.id + "  start: " + rtn[0] + "   end: " + rtn[1]);
+			// System.out.println(a.id + " start: " + rtn[0] + " end: " + rtn[1]);
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -157,5 +158,28 @@ public abstract class CircleIntersector {
 
 	public static float angleBetweenCenters(VertexCircle a, VertexCircle b) {
 		return PApplet.atan2(b.orig.y - a.orig.y, b.orig.x - a.orig.x);
+	}
+
+	/**
+	 * Used to determine the midpoint between to intersecting circles. This midpoint
+	 * is used to set the relative angles of nodes to this centroid.
+	 * 
+	 * @param A
+	 * @param B
+	 * @return
+	 */
+	public static PVector getMidIntersection(VertexCircle A, VertexCircle B) {
+		// find the distance to midpoint
+		float d = A.radius - ((B.radius + A.radius) - PApplet.dist(A.orig.x, A.orig.y, B.orig.x, B.orig.y)) / 2;
+
+		// find the angle between centers
+		float angle = PApplet.atan2(A.orig.y - B.orig.y, A.orig.x - B.orig.x);
+
+		// find the coordinates of midpoint on the direction of the angle
+		float x = A.orig.x - PApplet.cos(angle) * d;
+		float y = A.orig.y - PApplet.sin(angle) * d;
+
+		// return the coordinates
+		return new PVector(x, y);
 	}
 }

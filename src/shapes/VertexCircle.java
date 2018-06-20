@@ -2,6 +2,7 @@ package shapes;
 
 import java.awt.Color;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import processing.core.*;
 
@@ -67,11 +68,11 @@ public class VertexCircle {
 			angle += section;
 		}
 	}
-	
+
 	private void updateNodesCoordinates() {
 		float angle = 0;
 		float section = PApplet.TWO_PI / nodes.size();
-		
+
 		for (Node n : nodes) {
 			float x = orig.x + PApplet.cos(angle) * radius;
 			float y = orig.y + PApplet.sin(angle) * radius;
@@ -142,36 +143,59 @@ public class VertexCircle {
 	 *            true if nodes equals to boundaries are included
 	 * @return
 	 */
-	public ArrayList<Node> getNodesBetweenAngle(float start, float end, boolean inclusive) {
-		ArrayList<Node> nBetween = new ArrayList<Node>();
+	public HashMap<String, ArrayList<Node>> getNodesBetweenAngle(float start, float end, boolean inclusive) {
+
+		ArrayList<Node> inScope = new ArrayList<Node>();
+
+		ArrayList<Node> outScope = new ArrayList<Node>();
 
 		for (Node n : nodes) {
+			n.unmarkNode();
 
+			// If the angle scope is continue
 			if (start < end) {
 
 				if (inclusive) {
-					if (start <= n.originalAngle && n.originalAngle <= end)
-						nBetween.add(n);
-
+					if (start <= n.originalAngle && n.originalAngle <= end) {
+						n.markNode();
+						inScope.add(n);
+					} else {
+						outScope.add(n);
+					}
 				} else {
-					if (start < n.originalAngle && n.originalAngle < end)
-						nBetween.add(n);
+					if (start < n.originalAngle && n.originalAngle < end) {
+						n.markNode();
+						inScope.add(n);
+					} else {
+						outScope.add(n);
+					}
 				}
-
+				// If the angle scope goes beyond TWO PI
 			} else {
 
 				if (inclusive) {
-					if (end >= n.originalAngle || n.originalAngle >= start)
-						nBetween.add(n);
-
+					if (end >= n.originalAngle || n.originalAngle >= start) {
+						n.markNode();
+						inScope.add(n);
+					} else {
+						outScope.add(n);
+					}
 				} else {
-					if (end > n.originalAngle || n.originalAngle > start)
-						nBetween.add(n);
+					if (end > n.originalAngle || n.originalAngle > start) {
+						n.markNode();
+						inScope.add(n);
+					} else {
+						outScope.add(n);
+					}
+
 				}
 			}
-
 		}
-		return nBetween;
+
+		HashMap<String, ArrayList<Node>> rtn = new HashMap<String, ArrayList<Node>>();
+		rtn.put("inScope", inScope);
+		rtn.put("outScope", outScope);
+		return rtn;
 	}
 
 	/**
@@ -184,16 +208,16 @@ public class VertexCircle {
 	 *            final reference of parameter angle
 	 * @param inclusive
 	 *            true if nodes equals to boundaries are included
+	 * @return the list or marked nodes
+	 * @deprecated
 	 */
 	public void markNodesBetweenAngle(float start, float end, boolean inclusive) {
 		for (Node n : nodes) {
 			n.unmarkNode();
 		}
 
-		ArrayList<Node> tmp = getNodesBetweenAngle(start, end, inclusive);
-		for (Node n : nodes) {
-			if (tmp.contains(n))
-				n.markNode();
+		for (Node n : getNodesBetweenAngle(start, end, inclusive).get("inScope")) {
+			n.markNode();
 		}
 	}
 

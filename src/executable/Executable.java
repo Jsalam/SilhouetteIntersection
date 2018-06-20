@@ -17,7 +17,7 @@ public class Executable extends PApplet {
 	}
 
 	public void setup() {
-		int sections = 12;
+		int sections = 18;
 		a = new VertexCircle(320, 320, 150, sections, "A");
 		b = new VertexCircle(200, 200, 100, sections, "B");
 		c = new VertexCircle(400, 200, 80, sections, "C");
@@ -35,7 +35,7 @@ public class Executable extends PApplet {
 		line(0, height / 2, width, height / 2);
 		line(width / 2, 0, width / 2, height);
 
-		s.getSilhouette();
+		s.getSilhouette2();
 		a.show(this);
 		b.show(this);
 		c.show(this);
@@ -52,8 +52,8 @@ public class Executable extends PApplet {
 			points = CircleIntersector.twoIntersectionPoints(a, c);
 			ellipse(points[0].x, points[0].y, 5, 5);
 			ellipse(points[1].x, points[1].y, 5, 5);
-			startEndA = CircleIntersector.StartEndAngleIntersection(a, points[0], points[1]);
-			startEndB = CircleIntersector.StartEndAngleIntersection(c, points[1], points[0]);
+			startEndA = CircleIntersector.startEndAngleIntersection(a, points[0], points[1]);
+			startEndB = CircleIntersector.startEndAngleIntersection(c, points[1], points[0]);
 			a.markNodesBetweenAngle(startEndA[0], startEndA[1], true);
 			c.markNodesBetweenAngle(startEndB[0], startEndB[1], true);
 		} else {
