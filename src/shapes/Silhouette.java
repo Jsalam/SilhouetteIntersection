@@ -1,111 +1,168 @@
 package shapes;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.TreeSet;
 
 import processing.core.*;
+import utilities.Centroid;
 import utilities.CircleIntersector;
+import utilities.HoleSorter;
 
+/**
+ * @author juan salamanca
+ *
+ */
 public class Silhouette {
 
-	public ArrayList<VertexCircle> vCs;
-	private ArrayList<Node> silouette;
+	private ArrayList<VertexCircle> vCs;
+	private ArrayList<Node> silhouette;
 	private PVector midpoint;
+	// This is for storing references to nodes marked in each circle
+	private TreeSet<Node> negativeMap;
 
 	public Silhouette() {
 		vCs = new ArrayList<VertexCircle>();
+		negativeMap = new TreeSet<Node>();
+		silhouette = new ArrayList<Node>();
 	}
 
 	public boolean addVertexCircle(VertexCircle vC) {
 		return vCs.add(vC);
 	}
 
-	public void getSilhouette() {
+	/**
+	 * Creates a silhouette
+	 */
+	public void getSilhouette(PApplet app) {
 
-		// This is for storing the nodes removed from each circle
-		ArrayList<ArrayList<Node>> negativeCircles = new ArrayList<ArrayList<Node>>();
+		// If there is at least two vertexCircles
+		if (vCs.size() >= 2) {
 
-		// Populate collection with empty node lists
-		for (int i = 0; i < vCs.size(); i++) {
-			negativeCircles.add(new ArrayList<Node>());
+			getNegativeNodes();
+
+			System.out.println(this.getClass().getName() + " negativeMap size:" + negativeMap.size());
+			
+			for(Node n: negativeMap) {
+				n.print();
+			}
+
+			if (negativeMap.size() > 0) {
+
+				// For each VertexCircle, reset the node marks and set them again based on the
+				// negative collection
+				for (VertexCircle vc : vCs) {
+					// unmark all nodes
+					// vc.unmarkAllNodes();
+
+					// mark selected all the nodes of each vertexCircle that belong to the negative
+					// collection
+					// for (Node n : vc.getNodes()) {
+					// if (negativeMap.contains(n)) {
+					// n.markNode();
+					// }
+					// }
+
+					// sort each collection
+					// HoleSorter.sortHole(vc.getNodes());
+				}
+			}
+			// concatenate them
+			// concatenateSilhouette();
 		}
+	}
 
-		// This list stores the intersection of all circles after removing negative
-		// nodes
-		ArrayList<Node> rtn = new ArrayList<Node>();
+	/**
+	 * Detects all the nodes inside intersections and mark then as 'negative'. The
+	 * returned list contains an ordered sequence of non-negative nodes
+	 */
+	public void getNegativeNodes() {
+		 negativeMap.clear();
 
-		// for each pair of circles
+		// For each VertexCircles
 		for (int i = 0; i < vCs.size() - 1; i++) {
 			VertexCircle A = vCs.get(i);
 
 			for (int j = i + 1; j < vCs.size(); j++) {
 				VertexCircle B = vCs.get(j);
 
-				// Midpoint
-				midpoint = CircleIntersector.getMidIntersection(A, B);
-
-				// This is a temporal set of nodes
-				ArrayList<Node> tmp = new ArrayList<Node>();
-
 				// if circles overlap
 				if (CircleIntersector.validateIntersection(A, B)) {
 
-					// find nodes in circle A that belong to the intersection
+					// ****** Add nodes of A to negative set and mark them ****
+					// Find intersection point
+					PVector[] intersectionPointsA = CircleIntersector.twoIntersectionPoints(A, B);
+					 addNodesToNegativeMap(A, intersectionPointsA);
+
+					// ****** Add nodes of B to negative set and mark them ****
+					// Find intersection point
+					PVector[] intersectionPointsB = CircleIntersector.twoIntersectionPoints(B, A);
+					 addNodesToNegativeMap(B, intersectionPointsB);
+
+					// else if A is included in B
+				} else if (CircleIntersector.validateInclusion(A, B)) {
+					// Mark all A nodes as selected and add the to negative list
 					for (Node n : A.getNodes()) {
-						if (PApplet.dist(n.x, n.y, B.orig.x, B.orig.y) < B.radius) {
-
-							// mark the nodes
-							n.markNode();
-
-							// store the set in a separate negative circle
-							if (!negativeCircles.get(i).contains(n))
-								negativeCircles.get(i).add(n);
-
-						} else {
-							if (n.selected && tmp.contains(n))
-								tmp.remove(n);
-							else if (!n.selected)
-								tmp.add(n);
-						}
+						n.markNode();
+						negativeMap.add(n);
 					}
-
-					// find nodes in circle B that belong to the intersection
+					// else if B is included in A
+				} else if (CircleIntersector.validateInclusion(B, A)) {
+					// Mark all B nodes as selected and add the to negative list
 					for (Node n : B.getNodes()) {
-						if (PApplet.dist(n.x, n.y, A.orig.x, A.orig.y) < A.radius) {
-
-							// mark the nodes
-							n.markNode();
-
-							// store the set in a separate negative circle
-							if (!negativeCircles.get(j).contains(n))
-								negativeCircles.get(j).add(n);
-						} else {
-							if (n.selected && tmp.contains(n))
-								tmp.remove(n);
-							else if (!n.selected)
-								tmp.add(n);
-						}
+						n.markNode();
+						negativeMap.add(n);
 					}
+					// else if no intersection and no inclusion
+				} 
+			}
+		}
+	}
 
-					// set angles for ordering
-					for (Node n : tmp) {
-						///// use get centorids here **********
-						n.setRelativeAngle(midpoint);
-					}
+	/**
+	 * If vertexCircle's nodes are within the scope of intersection angle then nodes
+	 * are marked and added to negative collection
+	 * 
+	 * @param negativeMap
+	 * @param vCircle
+	 * @param intersectionPoints
+	 */
+	private void addNodesToNegativeMap(VertexCircle vCircle, PVector[] intersectionPoints) {
+		// Find angles of intersection scope
+		float[] startEnd = CircleIntersector.startEndAngleIntersection(vCircle, intersectionPoints[0],
+				intersectionPoints[1]);
 
-					// sort nodes
-					Collections.sort(tmp);
+		// mark A's nodes in scope of angle
+		vCircle.markNodesBetweenAngle(startEnd[0], startEnd[1], true);
 
-					// Add temp to final result
-					rtn.addAll(tmp);
+		// add all marked nodes to the negative collection
+		for (Node n : vCircle.getNodes()) {
+			if (n.selected) {
+				negativeMap.add(n);
+			}
+		}
+	}
+
+	private void concatenateSilhouette() {
+		silhouette.clear();
+
+		// For each VertexCircle
+		for (VertexCircle vc : vCs) {
+
+			// retrieve the nonMarked nodes
+			for (Node n : vc.getNodes()) {
+				if (!n.selected) {
+					silhouette.add(n);
 				}
 			}
 		}
-
-		silouette = rtn;
 	}
 
+	/**
+	 * @deprecated
+	 */
 	public void getSilhouette2() {
 
 		// This is for storing references to nodes marked in each circle
@@ -122,9 +179,6 @@ public class Silhouette {
 			for (int j = i + 1; j < vCs.size(); j++) {
 				VertexCircle B = vCs.get(j);
 
-				// Midpoint
-				midpoint = CircleIntersector.getMidIntersection(A, B);
-
 				// This is a temporal set of nodes for current circle
 				ArrayList<Node> tmp = new ArrayList<Node>();
 
@@ -137,53 +191,99 @@ public class Silhouette {
 					float[] startEndA = CircleIntersector.startEndAngleIntersection(A, points[0], points[1]);
 
 					// All A's nodes in scope of angle
-					HashMap<String, ArrayList<Node>> tmpMapA = A.getNodesBetweenAngle(startEndA[0], startEndA[1], true);
-					negativeMap.put(A.id, tmpMapA.get("inScope"));
+					HashMap<String, ArrayList<Node>> tmpMapA = A.getNodeListsInOutScope(startEndA[0], startEndA[1],
+							true);
 
+					if (negativeMap.containsKey(A.id)) {
+						negativeMap.get(A.id).addAll(tmpMapA.get("inScope"));
+
+					} else {
+						negativeMap.put(A.id, tmpMapA.get("inScope"));
+					}
 					// ***** find nodes in circle **** B **** that belong to the intersection
 					points = CircleIntersector.twoIntersectionPoints(B, A);
 
 					float[] startEndB = CircleIntersector.startEndAngleIntersection(B, points[0], points[1]);
 
 					// All B's marked nodes
-					HashMap<String, ArrayList<Node>> tmpMapB = B.getNodesBetweenAngle(startEndB[0], startEndB[1], true);
-					negativeMap.put(B.id, tmpMapB.get("inScope"));
+					HashMap<String, ArrayList<Node>> tmpMapB = B.getNodeListsInOutScope(startEndB[0], startEndB[1],
+							true);
 
-					// aggregate nodes out of scope
-					tmp.addAll(tmpMapA.get("outScope"));
-					tmp.addAll(tmpMapB.get("outScope"));
+					if (negativeMap.containsKey(B.id)) {
+						negativeMap.get(B.id).addAll(tmpMapB.get("inScope"));
+
+					} else {
+						negativeMap.put(B.id, tmpMapB.get("inScope"));
+					}
+
+					// aggregate nodes out of scope and non-negative
+
+					for (Node n : tmpMapA.get("outScope")) {
+						if (!negativeMap.get(A.id).contains(n)) {
+							tmp.add(n);
+						}
+					}
+
+					for (Node n : tmpMapB.get("outScope")) {
+						if (!negativeMap.get(B.id).contains(n)) {
+							tmp.add(n);
+						}
+					}
 
 					// set angles for ordering
+					midpoint = CircleIntersector.getMidIntersection(A, B);
+
 					for (Node n : tmp) {
-						n.setRelativeAngle(midpoint);
+						// It might be necessary to use centroid here
+						n.setAbsoluteAngle(midpoint);
 					}
 
 					// sort nodes
 					Collections.sort(tmp);
 
 					// Add temp to final result
-					rtn.addAll(tmp);
+					for (Node n : tmp) {
+						if (!rtn.contains(n))
+							rtn.add(n);
+					}
+
+					// set angles for ordering
+					midpoint = Centroid.getCentroid(rtn);
+
+					for (Node n : rtn) {
+						// It might be necessary to use centroid here
+						n.setAbsoluteAngle(midpoint);
+					}
+
+					// sort nodes
+					Collections.sort(rtn);
+
 				}
 			}
 		}
 
-		silouette = rtn;
+		silhouette = rtn;
 	}
 
 	public void showSilouette(PApplet app) {
-		if (silouette.size() > 0) {
+
+		if (silhouette.size() > 3) {
 			app.beginShape();
 			app.stroke(0, 100);
 			app.fill(225, 255, 155, 30);
-			app.curveVertex(silouette.get(silouette.size() - 1).x, silouette.get(silouette.size() - 1).y);
-			for (int i = 0; i < silouette.size(); i++) {
-				silouette.get(i).show(app);
+			app.curveVertex(silhouette.get(silhouette.size() - 1).x, silhouette.get(silhouette.size() - 1).y);
+			for (int i = 0; i < silhouette.size(); i++) {
+				silhouette.get(i).show(app);
 				app.stroke(0, 100);
-				app.curveVertex(silouette.get(i).x, silouette.get(i).y);
+				app.curveVertex(silhouette.get(i).x, silhouette.get(i).y);
 			}
-			app.curveVertex(silouette.get(0).x, silouette.get(0).y);
-			app.curveVertex(silouette.get(1).x, silouette.get(1).y);
+			app.curveVertex(silhouette.get(0).x, silhouette.get(0).y);
+			app.curveVertex(silhouette.get(1).x, silhouette.get(1).y);
 			app.endShape();
+		}
+
+		for (Node n : negativeMap) {
+			n.show(app, Color.GREEN);
 		}
 	}
 

@@ -4,6 +4,13 @@ import processing.core.PApplet;
 import processing.core.PVector;
 import shapes.VertexCircle;
 
+/**
+ * The main goal of this class is to find the intersecting points of two
+ * circles.
+ * 
+ * @author juan salamanca
+ *
+ */
 public abstract class CircleIntersector {
 	/*
 	 * Implementation of
@@ -22,6 +29,23 @@ public abstract class CircleIntersector {
 	 */
 	public static boolean validateIntersection(VertexCircle a, VertexCircle b) {
 		if (a.radius + b.radius > dist(a, b) && dist(a, b) > PApplet.abs(a.radius - b.radius)) {
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Validates that one circle is inside another
+	 * 
+	 * @param a
+	 *            first circle
+	 * @param b
+	 *            second circle
+	 * @return True if the first circle is totally included inside the second circle
+	 */
+	public static boolean validateInclusion(VertexCircle a, VertexCircle b) {
+		if (dist(a, b) + a.radius <= b.radius) {
 			return true;
 		} else {
 			return false;

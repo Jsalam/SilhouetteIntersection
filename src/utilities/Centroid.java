@@ -5,18 +5,13 @@ import java.util.ArrayList;
 import processing.core.PVector;
 import shapes.Node;
 
-public class Centroid {
+public abstract class Centroid {
 	
-	public PVector centroid;
-	
-	public Centroid (ArrayList<Node> corners) {
-		centroid = getCentroid(corners);
-	}
 	
 	/*Implementation of wikipedia formula. This method is copied from the web
 	  Corners is a list of nodes in space
 	  */
-	 public PVector getCentroid(ArrayList<Node> corners) {
+	 public static PVector getCentroid(ArrayList<Node> corners) {
 	   double xsum = 0, ysum = 0, A = 0;
 
 	   for (int i = 0; i < corners.size(); i++) {

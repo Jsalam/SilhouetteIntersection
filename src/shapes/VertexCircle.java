@@ -1,6 +1,5 @@
 package shapes;
 
-import java.awt.Color;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -64,7 +63,7 @@ public class VertexCircle {
 		for (int i = 0; i < sections; i++) {
 			float x = PApplet.cos(angle) * radius;
 			float y = PApplet.sin(angle) * radius;
-			nodes.add(new Node(orig.x + x, orig.y + y, angle, i));
+			nodes.add(new Node(orig.x + x, orig.y + y, angle, id ,i));
 			angle += section;
 		}
 	}
@@ -88,12 +87,13 @@ public class VertexCircle {
 	 * @param app
 	 */
 	public void show(PApplet app) {
+		updateNodesCoordinates();
 		app.text(id, orig.x, orig.y);
 		app.beginShape();
 		app.stroke(0, 100);
 		app.curveVertex(nodes.get(nodes.size() - 1).x, nodes.get(nodes.size() - 1).y);
 		for (int i = 0; i < nodes.size(); i++) {
-			nodes.get(i).show(app, Color.RED);
+			nodes.get(i).show(app);
 			app.stroke(0, 100);
 			app.curveVertex(nodes.get(i).x, nodes.get(i).y);
 		}
@@ -130,9 +130,71 @@ public class VertexCircle {
 	}
 
 	/**
+	 * Set true the 'marked' variable of nodes if the are between the boundaries of
+	 * a given angle
+	 * 
+	 * @param start
+	 *            initial reference of parameter angle
+	 * @param end
+	 *            final reference of parameter angle
+	 * @param inclusive
+	 *            true if nodes equals to boundaries are included
+	 * @return the list or marked nodes
+	 */
+	public ArrayList<Node> markNodesBetweenAngle(float start, float end, boolean inclusive) {
+
+		for (Node n : nodes) {
+			
+			// Unmark all
+			// n.unmarkNode();
+
+			// If the angle scope is continue
+			if (start < end) {
+
+				if (inclusive) {
+					if (start <= n.originalAngle && n.originalAngle <= end) {
+						n.markNode();
+					} else {
+						n.unmarkNode();
+					}
+				} else {
+					if (start < n.originalAngle && n.originalAngle < end) {
+						n.markNode();
+					}else {
+						n.unmarkNode();
+					}
+				}
+				// If the angle scope goes beyond TWO PI
+			} else {
+
+				if (inclusive) {
+					if (end >= n.originalAngle || n.originalAngle >= start) {
+						n.markNode();
+					}else {
+						n.unmarkNode();
+					}
+				} else {
+					if (end > n.originalAngle || n.originalAngle > start) {
+						n.markNode();
+					}else {
+						n.unmarkNode();
+					}
+				}
+			}
+		}
+		return nodes;
+	}
+
+	/**
 	 * Returns a collection of nodes which angle relative to the center of the shape
 	 * fall between the boundaries of the parameter angle. If 'inclusive'is true,
 	 * the resulting list includes nodes with angles equal to the boundaries.
+	 * 
+	 * When the nodes fall in the scope of the angle are marked selected() else
+	 * unselected().
+	 * 
+	 * HasMap Keys: for node in the intersection "inScope," and outside of
+	 * intersection "outScope."
 	 * 
 	 * 
 	 * @param start
@@ -143,14 +205,13 @@ public class VertexCircle {
 	 *            true if nodes equals to boundaries are included
 	 * @return
 	 */
-	public HashMap<String, ArrayList<Node>> getNodesBetweenAngle(float start, float end, boolean inclusive) {
+	public HashMap<String, ArrayList<Node>> getNodeListsInOutScope(float start, float end, boolean inclusive) {
 
 		ArrayList<Node> inScope = new ArrayList<Node>();
 
 		ArrayList<Node> outScope = new ArrayList<Node>();
 
 		for (Node n : nodes) {
-			n.unmarkNode();
 
 			// If the angle scope is continue
 			if (start < end) {
@@ -160,6 +221,7 @@ public class VertexCircle {
 						n.markNode();
 						inScope.add(n);
 					} else {
+						n.unmarkNode();
 						outScope.add(n);
 					}
 				} else {
@@ -167,6 +229,7 @@ public class VertexCircle {
 						n.markNode();
 						inScope.add(n);
 					} else {
+						n.unmarkNode();
 						outScope.add(n);
 					}
 				}
@@ -178,6 +241,7 @@ public class VertexCircle {
 						n.markNode();
 						inScope.add(n);
 					} else {
+						n.unmarkNode();
 						outScope.add(n);
 					}
 				} else {
@@ -185,6 +249,7 @@ public class VertexCircle {
 						n.markNode();
 						inScope.add(n);
 					} else {
+						n.unmarkNode();
 						outScope.add(n);
 					}
 
@@ -198,35 +263,18 @@ public class VertexCircle {
 		return rtn;
 	}
 
-	/**
-	 * Set true the 'isIn' variable of nodes if the are between the boundaries of a
-	 * given angle
-	 * 
-	 * @param start
-	 *            initial reference of parameter angle
-	 * @param end
-	 *            final reference of parameter angle
-	 * @param inclusive
-	 *            true if nodes equals to boundaries are included
-	 * @return the list or marked nodes
-	 * @deprecated
-	 */
-	public void markNodesBetweenAngle(float start, float end, boolean inclusive) {
-		for (Node n : nodes) {
-			n.unmarkNode();
-		}
-
-		for (Node n : getNodesBetweenAngle(start, end, inclusive).get("inScope")) {
+	
+	public void markAllNodes() {
+		for(Node n : nodes) {
 			n.markNode();
 		}
 	}
-
-	public void unmarkNodesBetweenAngle() {
-		for (Node n : nodes) {
+	
+	public void unmarkAllNodes() {
+		for(Node n : nodes) {
 			n.unmarkNode();
 		}
 	}
-
 	public void updateCenter(PVector center) {
 		orig.set(center);
 		updateNodesCoordinates();
